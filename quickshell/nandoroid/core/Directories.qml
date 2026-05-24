@@ -17,7 +17,7 @@ Singleton {
     readonly property string config: StandardPaths.standardLocations(StandardPaths.ConfigLocation)[0]
     readonly property string state: StandardPaths.standardLocations(StandardPaths.StateLocation)[0]
     readonly property string cache: StandardPaths.standardLocations(StandardPaths.CacheLocation)[0]
-    readonly property string genericCache: cache.toString().startsWith("file://") ? cache.toString().substring(7) : cache.toString()
+    readonly property string genericCache: Functions.FileUtils.trimFileProtocol(`${home}/.cache`)
 
     // NAnDoroid paths (without "file://")
     property string assetsPath: Quickshell.shellPath("assets")
@@ -31,6 +31,10 @@ Singleton {
     // Notifications cache
     property string notificationsPath: Functions.FileUtils.trimFileProtocol(`${cache}/notifications/notifications.json`)
 
+    // Favorites cache
+    property string favoritesPathRaw: genericCache + "/nandoroid/favorites.json"
+    property string favoritesPath: "file://" + favoritesPathRaw
+
     // Screenshots
     property string screenshotTemp: "/tmp/nandoroid/screenshots"
     property string screenshotDir: Functions.FileUtils.trimFileProtocol(`${pictures}/Screenshots`)
@@ -39,6 +43,7 @@ Singleton {
     Component.onCompleted: {
         Quickshell.execDetached(["mkdir", "-p", `${shellConfig}`])
         Quickshell.execDetached(["mkdir", "-p", `${screenshotTemp}`])
+        Quickshell.execDetached(["mkdir", "-p", `${cache.toString().substring(7)}/nandoroid`])
         
         // Ensure matugen output dir exists
         const matugenFile = generatedMaterialThemePath;

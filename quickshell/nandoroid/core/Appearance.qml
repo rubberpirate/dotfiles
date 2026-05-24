@@ -20,9 +20,8 @@ Singleton {
 
     function updateScale() {
         if (!Config.ready) {
-            // Try to guess scale from screen height even if config isn't ready
             const screenHeight = Quickshell.screens[0]?.height ?? 1080;
-            effectiveScale = Math.max(0.5, Math.min(2.5, screenHeight / 1080.0));
+            effectiveScale = Math.round(Math.max(0.5, Math.min(2.5, screenHeight / 1080.0)) * 20) / 20;
             return;
         }
         const appearance = Config.options.appearance;
@@ -30,7 +29,15 @@ Singleton {
         
         if (appearance.autoScale === true) {
             const screenHeight = Quickshell.screens[0]?.height ?? 1080;
-            effectiveScale = Math.max(0.5, Math.min(2.5, screenHeight / 1080.0));
+            const rawScale = Math.max(0.5, Math.min(2.5, screenHeight / 1080.0));
+            
+            if (screenHeight < 1000) {
+                // Low Res (720p, etc): Force 0.25 steps to ensure sharp pixels.
+                effectiveScale = Math.round(rawScale * 4) / 4;
+            } else {
+                // High Res (1080p, 2K, 4K): 0.05 steps for smooth & precise scaling.
+                effectiveScale = Math.round(rawScale * 20) / 20;
+            }
         } else {
             effectiveScale = appearance.globalScale ?? 1.0;
         }
@@ -177,8 +184,11 @@ Singleton {
         property color colOnError: m3colors.m3onError
         property color colErrorContainer: m3colors.m3errorContainer
         property color colOnErrorContainer: m3colors.m3onErrorContainer
-        // Warning (Mapped to Tertiary in M3 if not specific)
-        property color colWarning: m3colors.m3tertiary 
+        // Warning Colors (Vivid Orange/Red standard)
+        property color colWarning: "#FF5722"
+        property color colOnWarning: "#FFFFFF"
+        property color colWarningContainer: m3colors.darkmode ? "#3E1A11" : "#FFDAD5"
+        property color colOnWarningContainer: m3colors.darkmode ? "#FFCCBC" : "#410001"
         // Background alias
         property color colBackground: colLayer0
         // Misc

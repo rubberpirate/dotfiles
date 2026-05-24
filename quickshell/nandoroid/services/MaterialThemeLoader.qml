@@ -13,7 +13,16 @@ import Quickshell.Io
  */
 Singleton {
     id: root
-    property string filePath: Directories.generatedMaterialThemePath
+    
+    readonly property string generatedPath: Directories.generatedMaterialThemePath
+    readonly property string themesDir: "file://" + Directories.assetsPath + "/themes/"
+    
+    property string filePath: {
+        if (!Config.ready) return generatedPath;
+        const bg = Config.options.appearance.background;
+        if (bg.matugen || bg.matugenThemeFile === "") return generatedPath;
+        return themesDir + bg.matugenThemeFile;
+    }
 
     function reapplyTheme() {
         themeFileView.reload()
@@ -39,12 +48,7 @@ Singleton {
         repeat: false
         running: false
         onTriggered: {
-            // Only auto-apply from generated file if matugen (wallpaper mode) is active
-            if (Config.ready && Config.options.appearance.background.matugen) {
-                root.applyColors(themeFileView.text())
-            } else {
-
-            }
+            root.applyColors(themeFileView.text())
         }
     }
 
@@ -59,10 +63,7 @@ Singleton {
         onLoadedChanged: {
             const fileContent = themeFileView.text()
             if (fileContent.trim() !== "") {
-                // Only auto-apply from generated file if matugen (wallpaper mode) is active
-                if (Config.ready && Config.options.appearance.background.matugen) {
-                    root.applyColors(fileContent)
-                }
+                root.applyColors(fileContent)
             }
         }
         onLoadFailed: error => {

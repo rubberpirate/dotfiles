@@ -45,7 +45,7 @@ import Quickshell
 
                             delegate: Item {
                                 id: networkItem
-                                width: wifiList.width - 24 * Appearance.effectiveScale
+                                width: wifiList.width
                                 height: networkCol.implicitHeight
                                 
                                 property bool expanded: modelData.askingPassword

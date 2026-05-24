@@ -37,7 +37,7 @@ Singleton {
             "JSON_FILE=\"$HOME_PATH/.config/quickshell/nandoroid/data/dependencies.json\"; " +
             "if ! command -v jq >/dev/null 2>&1; then echo 'ERROR: jq not found'; exit 1; fi; " +
             "if [ ! -f \"$JSON_FILE\" ]; then echo 'ERROR: File not found'; exit 1; fi; " +
-            "categories=(\"core\" \"services\" \"utilities\" \"theming\" \"fonts\" \"optional\"); " +
+            "categories=(\"core\" \"services\" \"utilities\" \"theming\" \"fonts\" \"livewallpaper\" \"optional\"); " +
             "for cat in \"${categories[@]}\"; do " +
             "  jq -c \".$cat[]\" \"$JSON_FILE\" | while read -r item; do " +
             "    name=$(echo \"$item\" | jq -r '.name'); " +

@@ -93,7 +93,7 @@ ColumnLayout {
 
     // --- Categorized List ---
     Repeater {
-        model: ["core", "services", "utilities", "theming", "fonts", "optional"]
+        model: ["core", "services", "utilities", "theming", "fonts", "livewallpaper", "optional"]
         delegate: ColumnLayout {
             Layout.fillWidth: true
             spacing: 12 * Appearance.effectiveScale
@@ -119,6 +119,7 @@ ColumnLayout {
                             case "utilities": return "Utility Tools";
                             case "theming": return "Theming & Appearance";
                             case "fonts": return "Required Fonts";
+                            case "livewallpaper": return "Live Wallpaper Support";
                             case "optional": return "Optional Addons";
                             default: return modelData.toUpperCase();
                         }

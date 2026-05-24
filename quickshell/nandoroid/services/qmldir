@@ -4,6 +4,7 @@ singleton BluetoothStatus BluetoothStatus.qml
 singleton Brightness Brightness.qml
 singleton DateTime DateTime.qml
 singleton HyprlandData HyprlandData.qml
+singleton HyprlandCompat HyprlandCompat.qml
 singleton Hyprsunset Hyprsunset.qml
 singleton MaterialThemeLoader MaterialThemeLoader.qml
 singleton MprisController MprisController.qml
@@ -35,5 +36,6 @@ singleton ScheduleService ScheduleService.qml
 singleton SmartAutomation SmartAutomation.qml
 singleton TranslationService TranslationService.qml
 singleton WallhavenService WallhavenService.qml
+singleton WallpaperEngineService WallpaperEngineService.qml
 singleton NaIveWallpaperService NaIveWallpaperService.qml
 singleton SysCheckService SysCheckService.qml

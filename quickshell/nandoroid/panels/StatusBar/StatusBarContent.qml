@@ -188,21 +188,23 @@ Item {
 
     // Time (Left of Notch)
     StyledText {
+        visible: (Config.ready && Config.options.statusBar) ? Config.options.statusBar.clockPosition !== "right" : true
         anchors.verticalCenter: parent.verticalCenter
         x: dynamicIsland.x + dynamicIsland.pill.x - width - 16 * Appearance.effectiveScale
         text: DateTime.currentTime
         font.pixelSize: Appearance.font.pixelSize.small
-        font.weight: Font.DemiBold
+        font.weight: Font.Normal
         color: root.contentColor
     }
 
     // Date (Right of Notch)
     StyledText {
+        visible: (Config.ready && Config.options.statusBar) ? Config.options.statusBar.clockPosition !== "right" : true
         anchors.verticalCenter: parent.verticalCenter
         x: dynamicIsland.x + dynamicIsland.pill.x + dynamicIsland.pill.width + 16 * Appearance.effectiveScale
         text: DateTime.currentDate
         font.pixelSize: Appearance.font.pixelSize.small
-        font.weight: Font.DemiBold
+        font.weight: Font.Normal
         color: root.contentColor
     }
 
@@ -336,6 +338,31 @@ Item {
                 visible: Battery.available
                 Layout.alignment: Qt.AlignVCenter
                 color: root.contentColor
+            }
+
+            // Right-aligned clock
+            ColumnLayout {
+                id: rightClock
+                visible: (Config.ready && Config.options.statusBar) ? Config.options.statusBar.clockPosition === "right" : false
+                spacing: -2 * Appearance.effectiveScale
+                Layout.alignment: Qt.AlignVCenter
+                Layout.leftMargin: 4 * Appearance.effectiveScale
+
+                StyledText {
+                    font.pixelSize: Appearance.font.pixelSize.smallest
+                    color: root.subtextColor
+                    text: DateTime.currentDate
+                    font.weight: Font.Normal
+                    Layout.alignment: Qt.AlignRight
+                }
+
+                StyledText {
+                    font.pixelSize: Appearance.font.pixelSize.smaller
+                    color: root.contentColor
+                    font.weight: Font.Normal
+                    text: DateTime.currentTime
+                    Layout.alignment: Qt.AlignRight
+                }
             }
 
             // DND Indicator

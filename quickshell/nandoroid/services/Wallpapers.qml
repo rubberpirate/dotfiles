@@ -14,37 +14,106 @@ Singleton {
     
     readonly property list<string> imagePatterns: ["*.jpg", "*.jpeg", "*.png", "*.webp", "*.avif"]
 
-    property list<string> favorites: Config.ready ? Config.options.appearance.background.favorites : []
+    property list<string> favorites: []
 
     function isFavorite(path) {
-        if (!Config.ready) return false;
         const cleanPath = path.toString().startsWith("file://") ? path.toString().substring(7) : path.toString();
-        return favorites.includes(cleanPath);
+        // Case-insensitive check for favorites
+        for (let i = 0; i < favorites.length; i++) {
+            if (favorites[i].toLowerCase() === cleanPath.toLowerCase()) return true;
+        }
+        return false;
     }
 
     function toggleFavorite(path) {
-        if (!Config.ready) return;
         const cleanPath = path.toString().startsWith("file://") ? path.toString().substring(7) : path.toString();
         let currentFavs = favorites.slice();
-        const index = currentFavs.indexOf(cleanPath);
         
-        if (index === -1) {
-            currentFavs.push(cleanPath);
-        } else {
-            currentFavs.splice(index, 1);
+        let foundIndex = -1;
+        for (let i = 0; i < currentFavs.length; i++) {
+            if (currentFavs[i].toLowerCase() === cleanPath.toLowerCase()) {
+                foundIndex = i;
+                break;
+            }
         }
         
-        Config.options.appearance.background.favorites = currentFavs;
-        favorites = currentFavs;
+        if (foundIndex === -1) {
+            currentFavs.push(cleanPath);
+        } else {
+            currentFavs.splice(foundIndex, 1);
+        }
+        
+        root.favorites = currentFavs;
+        saveFavorites();
+    }
+
+    function selectRandomFavorite() {
+        // Filter favorites to include only static images and exclude Wallpaper Engine paths
+        const staticFavs = favorites.filter(path => {
+            const p = path.toLowerCase();
+            const isImage = p.endsWith(".jpg") || p.endsWith(".jpeg") || p.endsWith(".png") || p.endsWith(".webp") || p.endsWith(".avif");
+            const isWE = p.includes("431960"); // Steam Workshop ID for Wallpaper Engine
+            return isImage && !isWE;
+        });
+
+        if (staticFavs.length > 0) {
+            const index = Math.floor(Math.random() * staticFavs.length);
+            root.select(staticFavs[index]);
+            return true;
+        }
+        return false;
+    }
+
+    function selectRandomFromDirectory(dirPath) {
+        let cleanPath = dirPath.toString().startsWith("file://") ? dirPath.toString().substring(7) : dirPath.toString();
+        // Use a shell command to pick a random image file from the directory
+        const cmd = `find "${cleanPath}" -maxdepth 1 -type f \\( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.avif" \\) | shuf -n 1`;
+        
+        const proc = Quickshell.exec(["bash", "-c", cmd]);
+        proc.finished.connect(() => {
+            const result = proc.stdout.readAll().trim();
+            if (result !== "") {
+                root.select(result);
+            }
+        });
+    }
+
+    function saveFavorites() {
+        const data = JSON.stringify(root.favorites);
+        const path = Directories.favoritesPathRaw;
+        Quickshell.execDetached(["sh", "-c", 'printf "%s" "$1" > "$2"', "sh", data, path]);
+    }
+
+    FileView {
+        id: favsFile
+        path: Directories.favoritesPath
+        watchChanges: true
+        onLoaded: {
+            try {
+                const parsed = JSON.parse(text());
+                if (Array.isArray(parsed)) {
+                    root.favorites = parsed;
+                }
+            } catch(e) {
+
+            }
+        }
+        onLoadFailed: error => {
+            if (error == FileViewError.FileNotFound) {
+                saveFavorites(); // Create it empty
+            }
+        }
     }
 
     // Helper process to generate material colors
     Process {
         id: matugenProc
-        command: ["bash", "-c", `matugen -c ~/.config/matugen/config.toml -t "$1" -m "$2" image "$3" --source-color-index 0 && sh -c "~/.config/quickshell/nandoroid/scripts/colors/apply_system_theme.sh"`, "matugen", scheme, (Config.options.appearance.background.darkmode ? "dark" : "light"), filePath]
+        command: ["bash", "-c", `matugen -c ~/.config/matugen/config.toml -t "$1" -m "$2" image "$3" --source-color-index 0`, "matugen", scheme, (Config.options.appearance.background.darkmode ? "dark" : "light"), filePath]
         property string filePath
         property string scheme: Config.options.appearance.background.matugenScheme || "scheme-tonal-spot"
         
+        onRunningChanged: if (running) CavaService.stop(); else CavaService.start();
+
         stderr: StdioCollector {
             onStreamFinished: {
                 // Look for actual fatal error markers (Matugen v4 specific fatal markers)
@@ -57,9 +126,15 @@ Singleton {
 
     Process {
         id: matugenColorProc
-        command: ["bash", "-c", `matugen -c ~/.config/matugen/config.toml -t "$1" -m "$2" color hex "$3" --source-color-index 0 && sh -c "~/.config/quickshell/nandoroid/scripts/colors/apply_system_theme.sh"`, "matugen", scheme, (Config.options.appearance.background.darkmode ? "dark" : "light"), hexColor]
+        command: ["bash", "-c", `matugen -c ~/.config/matugen/config.toml -t "$1" -m "$2" color hex "$3"`, "matugen", scheme, (Config.options.appearance.background.darkmode ? "dark" : "light"), hexColor]
         property string hexColor
-        property string scheme: "scheme-tonal-spot"
+        property string scheme: {
+            // When in Basic mode, always use tonal-spot for the system generation
+            if (Config.ready && !Config.options.appearance.background.matugen) return "scheme-tonal-spot";
+            return Config.options.appearance.background.matugenScheme || "scheme-tonal-spot";
+        }
+
+        onRunningChanged: if (running) CavaService.stop(); else CavaService.start();
 
         stderr: StdioCollector {
             onStreamFinished: {
@@ -83,6 +158,18 @@ Singleton {
         Quickshell.execDetached(cmd);
     }
 
+    function getWallpaperPath(source = "desktop") {
+        if (source === "lockscreen") {
+            return Config.options.lock.wallpaperPath;
+        }
+        
+        if (WallpaperEngineService.active) {
+            return WallpaperEngineService.screenshotPath;
+        }
+        
+        return Config.options.appearance.background.wallpaperPath;
+    }
+
     function toggleDarkMode() {
         if (!Config.ready) return;
         Config.options.appearance.background.darkmode = !Config.options.appearance.background.darkmode;
@@ -90,7 +177,7 @@ Singleton {
         // Re-run colors generation
         if (Config.options.appearance.background.matugen) {
             const source = Config.options.appearance.background.matugenSource || "desktop"
-            const path = source === "lockscreen" ? Config.options.lock.wallpaperPath : Config.options.appearance.background.wallpaperPath
+            const path = root.getWallpaperPath(source)
             const cleanPath = path.toString().startsWith("file://") ? path.toString().substring(7) : path.toString()
             if (cleanPath !== "") {
                 matugenProc.filePath = cleanPath
@@ -112,6 +199,8 @@ Singleton {
         }
         
         if (Config.options.appearance.background.matugen) {
+            // When selecting a static wallpaper, we use the cleanPath directly 
+            // but we can also use getWallpaperPath which will return the new wallpaperPath since WE is not active
             matugenProc.filePath = cleanPath
             matugenProc.running = true
         }
@@ -124,7 +213,7 @@ Singleton {
         Config.options.appearance.background.matugenSource = source
         
         if (Config.options.appearance.background.matugen) {
-            const path = source === "lockscreen" ? Config.options.lock.wallpaperPath : Config.options.appearance.background.wallpaperPath
+            const path = root.getWallpaperPath(source)
             const cleanPath = path.toString().startsWith("file://") ? path.toString().substring(7) : path.toString()
             if (cleanPath === "") return
             matugenProc.filePath = cleanPath
@@ -132,16 +221,55 @@ Singleton {
         }
     }
 
-    function applyColor(hex) {
+    function applyColor(hex, source = "desktop") {
         if (!Config.ready) return;
         Config.options.appearance.background.matugen = false // Disable wallpaper-based matugen
         Config.options.appearance.background.matugenCustomColor = hex
-        matugenColorProc.hexColor = hex
-        matugenColorProc.running = true
+        Config.options.appearance.background.matugenThemeFile = ""
+        Config.options.appearance.background.matugenSource = source
         
-        // We don't save single colors to the material theme file yet 
-        // because we don't have a full Material 3 JSON for a single color 
-        // in a simple way without running matugen.
+        matugenColorProc.running = false;
+        matugenColorProc.hexColor = hex;
+        // Small delay to ensure process state reset
+        Qt.callLater(() => { matugenColorProc.running = true; });
+    }
+
+    function pickAccent(target = "desktop") {
+        // Normalize target name to "lockscreen" if it's "lock"
+        const finalTarget = target === "lock" ? "lockscreen" : target;
+        const cmd = `
+            pkill hyprpicker || true
+            sleep 0.5
+            HEX=$(hyprpicker --no-fancy)
+            if [[ "$HEX" =~ ^#[0-9A-Fa-f]{6}$ ]]; then
+                quickshell -c nandoroid ipc call wallpaper_accent apply_accent "$HEX" "${finalTarget}"
+            else
+                quickshell -c nandoroid ipc call wallpaper_accent close_accent
+            fi
+        `;
+        Quickshell.execDetached(["bash", "-c", cmd]);
+    }
+
+    IpcHandler {
+        target: "wallpaper_accent"
+        function apply_accent(hex: string, source: string): void {
+            console.log("[Wallpapers] Accent color picked: " + hex + " for " + source);
+            root.applyColor(hex, source);
+            GlobalStates.accentPickerOpen = false;
+        }
+        function close_accent(): void {
+            GlobalStates.accentPickerOpen = false;
+        }
+    }
+
+    // Kill hyprpicker if the overlay is closed through other means (shortcut, launcher, etc)
+    Connections {
+        target: GlobalStates
+        function onAccentPickerOpenChanged() {
+            if (!GlobalStates.accentPickerOpen) {
+                Quickshell.execDetached(["pkill", "hyprpicker"]);
+            }
+        }
     }
 
     Process {
@@ -211,7 +339,7 @@ Singleton {
         
         if (Config.options.appearance.background.matugen) {
             const source = Config.options.appearance.background.matugenSource || "desktop"
-            const path = (source === "lockscreen" && Config.options.lock) ? Config.options.lock.wallpaperPath : Config.options.appearance.background.wallpaperPath;
+            const path = root.getWallpaperPath(source);
             const cleanPath = path.toString().startsWith("file://") ? path.toString().substring(7) : path.toString();
             if (cleanPath !== "") {
                 matugenProc.filePath = cleanPath;
@@ -267,6 +395,14 @@ Singleton {
         Config.options.lock.wallpaperPath = "file://" + cleanPath
     }
 
+    function generateColors(path) {
+        const cleanPath = path.toString().startsWith("file://") ? path.toString().substring(7) : path.toString()
+        if (Config.options.appearance.background.matugen) {
+            matugenProc.filePath = cleanPath
+            matugenProc.running = true
+        }
+    }
+
     // --- Local state for better reactivity ---
     property bool _autoCycleEnabled: false
     property string _autoCycleDirectory: ""
@@ -311,6 +447,8 @@ Singleton {
             const theme = bg.matugenThemeFile;
             if (theme && theme !== "") {
                 root.applyTheme(theme);
+            } else if (bg.matugenCustomColor && bg.matugenCustomColor !== "") {
+                root.applyColor(bg.matugenCustomColor);
             } else {
                 root.applyTheme("mocha.json");
             }
@@ -397,6 +535,7 @@ Singleton {
         showDotAndDotDot: false
         sortField: root.sortField
         sortReversed: root.sortReversed
+        sortCaseSensitive: false
         onCountChanged: {
             if (count > 0 && root._autoCycleEnabled && root.autoCyclePending) {
                 root.autoCyclePending = false;
@@ -435,12 +574,15 @@ Singleton {
         ignoreUnknownSignals: true
         function onMatugenChanged() {
             if (!Config.ready) return;
-            if (Config.options.appearance.background.matugen) {
+            const bg = Config.options.appearance.background;
+            if (bg.matugen) {
                 root.initializeMatugen();
             } else {
-                const theme = Config.options.appearance.background.matugenThemeFile;
+                const theme = bg.matugenThemeFile;
                 if (theme && theme !== "") {
                     root.applyTheme(theme);
+                } else if (bg.matugenCustomColor && bg.matugenCustomColor !== "") {
+                    root.applyColor(bg.matugenCustomColor);
                 } else {
                     root.applyTheme("mocha.json");
                 }
@@ -452,7 +594,7 @@ Singleton {
     Timer {
         id: autoCycleTimer
         interval: Math.max(1, root._autoCycleInterval) * 60 * 1000
-        running: root._autoCycleEnabled
+        running: root._autoCycleEnabled && !GameMode.active
         repeat: true
         onTriggered: {
             root.nextWallpaper();

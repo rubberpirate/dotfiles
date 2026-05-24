@@ -193,6 +193,10 @@ PanelWindow {
                     onClicked: { Quickshell.execDetached([Directories.home.replace("file://", "") + "/.config/quickshell/nandoroid/scripts/restartshell.sh"]); root.close() }
                 }
                 MenuItem {
+                    menuText: "Restart Fix"; menuIcon: "build"
+                    onClicked: { Quickshell.execDetached([Directories.home.replace("file://", "") + "/.config/quickshell/nandoroid/scripts/restart_fix.sh"]); root.close() }
+                }
+                MenuItem {
                     menuText: "Settings"; menuIcon: "settings"
                     onClicked: { GlobalStates.activateSettings(); root.close() }
                 }

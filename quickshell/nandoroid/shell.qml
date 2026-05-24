@@ -34,11 +34,13 @@ import Quickshell.Hyprland
 ShellRoot {
     id: root
 
+    // Reference singleton to ensure it is instantiated
+    readonly property var _caffeine: Caffeine
+
     Component.onCompleted: {
         MaterialThemeLoader.reapplyTheme()
         Wallpapers.syncSettings() // Ensure Wallpapers service is active and synced
         SmartAutomation.runAutomationCycle() // Kickstart smart automation
-        if (Caffeine.active) console.log("Caffeine active on startup")
     }
 
     // ── Phase 0: Lock Screen ──
@@ -46,6 +48,7 @@ ShellRoot {
 
     // ── Phase 1: Background ──
     Background {}
+    DesktopWidgets {}
 
     // ── Phase 2: Status Bar ──
     StatusBar {}
@@ -60,9 +63,6 @@ ShellRoot {
 
     // ── Phase 5: Quick Settings ──
     QuickSettings {}
-
-    // ── Phase 5.5: Quick Wallpaper ──
-    QuickWallpaper {}
 
     // ── Phase 5.6: Quick Actions ──
     QuickActions {}
@@ -200,13 +200,6 @@ ShellRoot {
     }
 
     IpcHandler {
-        target: "quickwallpaper"
-        function open() { GlobalStates.quickWallpaperOpen = true }
-        function close() { GlobalStates.quickWallpaperOpen = false }
-        function toggle() { GlobalStates.quickWallpaperOpen = !GlobalStates.quickWallpaperOpen }
-    }
-
-    IpcHandler {
         target: "dashboard"
         function open() { GlobalStates.dashboardOpen = true }
         function close() { GlobalStates.dashboardOpen = false }
@@ -323,6 +316,8 @@ ShellRoot {
     }
 
     // ── Phase 15: Screenshot Overlay ──
+    AccentPicker {}
+
     Variants {
         model: Quickshell.screens
         

@@ -107,7 +107,14 @@ Singleton {
 
     function startNextDownload() {
         if (_pendingUrl === "") return;
-        coverArtDownloader.exec(["sh", "-c", '[ -f "$2" ] || curl -sSL "$1" -o "$2"', "sh", _pendingUrl, _pendingDest]);
+        
+        // Safety check: Don't pass massive Base64 strings or non-URLs to curl
+        if (_pendingUrl.startsWith("data:") || _pendingUrl.length > 1024) {
+            _pendingUrl = "";
+            return;
+        }
+
+        coverArtDownloader.exec(["sh", "-c", '[ -f "$2" ] || curl -sSL "$1" -o "$2" > /dev/null 2>&1', "sh", _pendingUrl, _pendingDest]);
         _pendingUrl = "" 
     }
 
@@ -271,14 +278,15 @@ Singleton {
         if (entry !== "" || identity !== "") {
             let target = entry.replace(".desktop", "") || identity;
             
-            // Try focusing by class (most reliable)
-            Quickshell.execDetached(["hyprctl", "dispatch", "focuswindow", `class:${target}`]);
+            // Use case-insensitive regex to find the window
+            // class:^(?i)(target)$ matches the class exactly but ignores case
+            Quickshell.execDetached(["hyprctl", "dispatch", HyprlandCompat.dspFocusWindow(`class:^(?i)(${target})$`)]);
             
-            // Also try focusing by title/name as a fallback (some apps don't match entry to class)
-            Quickshell.execDetached(["hyprctl", "dispatch", "focuswindow", `title:${target}`]);
+            // Fallback to substring match if exact match fails
+            Quickshell.execDetached(["hyprctl", "dispatch", HyprlandCompat.dspFocusWindow(`title:(?i)${target}`)]);
             
-            // Close the notification center to show the window
             GlobalStates.notificationCenterOpen = false;
+            GlobalStates.dashboardOpen = false;
         }
     }
 

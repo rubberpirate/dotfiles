@@ -8,6 +8,7 @@ RippleButton {
     id: card
     property string label: ""
     property var cardColors: ["transparent", "transparent", "transparent"]
+    property string iconName: ""
     property bool isSelected: false
     
     implicitWidth: 104 * Appearance.effectiveScale
@@ -41,9 +42,21 @@ RippleButton {
 
             Row {
                 anchors.fill: parent
+                // Show bars if no icon is set OR if the card is selected (even if it has an icon)
+                visible: card.iconName === "" || card.isSelected
                 Rectangle { width: parent.width/3; height: parent.height; color: card.cardColors[0] }
                 Rectangle { width: parent.width/3; height: parent.height; color: card.cardColors[1] }
                 Rectangle { width: parent.width/3; height: parent.height; color: card.cardColors[2] }
+            }
+
+            // Icon support
+            MaterialSymbol {
+                anchors.centerIn: parent
+                // Only show icon if set AND card is NOT selected
+                visible: card.iconName !== "" && !card.isSelected
+                text: card.iconName
+                iconSize: 48 * Appearance.effectiveScale
+                color: "white" // Neutral color when inactive
             }
             
             // Bottom Gradient for text readability
@@ -51,6 +64,7 @@ RippleButton {
                 anchors.bottom: parent.bottom
                 width: parent.width
                 height: 48 * Appearance.effectiveScale
+                visible: card.iconName === "" || card.isSelected
                 gradient: Gradient {
                     GradientStop { position: 0.0; color: "transparent" }
                     GradientStop { position: 1.0; color: Qt.rgba(0,0,0,0.6) }

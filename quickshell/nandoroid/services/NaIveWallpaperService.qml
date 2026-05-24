@@ -90,7 +90,11 @@ Singleton {
         checkProc.exited.connect((exitCode) => {
             if (exitCode === 0) {
                 if (apply) {
-                    Wallpapers.select("file://" + fullPath);
+                    if (GlobalStates.wallpaperSelectorTarget === "desktop") {
+                        Wallpapers.select("file://" + fullPath);
+                    } else {
+                        Wallpapers.selectForLockscreen("file://" + fullPath);
+                    }
                     root.sendNotification("Na-ive Wallpapers", "Already exists. Applied!");
                 } else {
                     root.sendNotification("Na-ive Wallpapers", "Already downloaded: " + filename);
@@ -104,7 +108,11 @@ Singleton {
                     });
                     p.exited.connect((exitCode) => {
                         if (exitCode === 0) {
-                            Wallpapers.select("file://" + fullPath);
+                            if (GlobalStates.wallpaperSelectorTarget === "desktop") {
+                                Wallpapers.select("file://" + fullPath);
+                            } else {
+                                Wallpapers.selectForLockscreen("file://" + fullPath);
+                            }
                             root.sendNotification("Na-ive Wallpapers", "Wallpaper applied successfully!");
                         } else {
                             root.sendNotification("Na-ive Wallpapers", "Download failed.");

@@ -6,54 +6,34 @@ import QtQuick
 
 /**
  * Caffeine service to prevent the system from idling.
- * Uses IdleInhibitor to block screen dimming/locking.
+ * Syncs directly with Config.options.quickSettings.caffeineActive.
  */
-Singleton {
+Item {
     id: root
 
-    property bool active: Config.options.quickSettings.caffeineActive
-    property bool startupReady: false
-
-    // Actual inhibition state combines user setting and startup delay
-    readonly property bool inhibited: active && startupReady
-
-    onActiveChanged: {
-        if (Config.ready) {
-            Config.options.quickSettings.caffeineActive = active
-        }
-    }
-
-    // Ensure the inhibitor kicks in after a short delay on startup/restart
-    // to ensure the compositor connection and windows are fully stable.
-    Timer {
-        interval: 1000
-        running: true
-        repeat: false
-        onTriggered: root.startupReady = true
-    }
-
-    Connections {
-        target: Config.options
-        function onQuickSettingsChanged() {
-            if (active !== Config.options.quickSettings.caffeineActive) {
-                active = Config.options.quickSettings.caffeineActive
-            }
-        }
-    }
+    // One-way binding from Config to this service
+    readonly property bool active: Config.ready ? Config.options.quickSettings.caffeineActive : false
 
     IdleInhibitor {
         id: inhibitor
-        enabled: root.inhibited
+        enabled: root.active
+        
+        // IdleInhibitor requires a surface to be active on some compositors.
         window: PanelWindow {
-            id: window
             implicitWidth: 0
             implicitHeight: 0
-            visible: true
             color: "transparent"
-            WlrLayershell.layer: WlrLayer.Background
-            WlrLayershell.namespace: "nandoroid:caffeine"
+            exclusionMode: ExclusionMode.Ignore
             
-            mask: Region {}
+            // Just in case...
+            anchors {
+                right: true
+                bottom: true
+            }
+            // Make it not interactable
+            mask: Region {
+                item: null
+            }
         }
     }
 }

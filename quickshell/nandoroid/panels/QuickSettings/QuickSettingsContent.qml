@@ -439,7 +439,9 @@ Item {
                         colBackgroundHover: Appearance.colors.colLayer2
                         colRipple: Appearance.colors.colLayer2Active
                         onClicked: {
-                            GlobalStates.quickWallpaperOpen = !GlobalStates.quickWallpaperOpen
+                            root.close()
+                            GlobalStates.wallpaperSelectorTarget = "desktop"
+                            GlobalStates.wallpaperSelectorOpen = true
                         }
                         MaterialSymbol {
                             anchors.centerIn: parent
@@ -447,6 +449,7 @@ Item {
                             iconSize: 18 * Appearance.effectiveScale
                             color: Appearance.m3colors.m3onSurface
                         }
+                        StyledToolTip { text: "Change Wallpaper" }
                     }
 
                     RippleButton {
@@ -463,6 +466,7 @@ Item {
                             iconSize: 18 * Appearance.effectiveScale
                             color: root.editMode ? Appearance.m3colors.m3onPrimaryContainer : Appearance.m3colors.m3onSurface
                         }
+                        StyledToolTip { text: root.editMode ? "Done Editing" : "Edit Toggles" }
                     }
 
                     RippleButton {
@@ -482,6 +486,7 @@ Item {
                             iconSize: 18 * Appearance.effectiveScale
                             color: Appearance.m3colors.m3onSurface
                         }
+                        StyledToolTip { text: "System Settings" }
                     }
 
                     RippleButton {
@@ -501,6 +506,7 @@ Item {
                             iconSize: 18 * Appearance.effectiveScale
                             color: Appearance.m3colors.m3error
                         }
+                        StyledToolTip { text: "Power Menu" }
                     }
                 }
             }
@@ -921,6 +927,6 @@ Item {
     
     Process {
         id: avatarPickerProc
-        command: ["bash", "-c", "cd /tmp && qs -c nandoroid ipc call spotlight browse_avatar"]
+        command: ["bash", "-c", "cd /tmp && quickshell -c nandoroid ipc call spotlight browse_avatar"]
     }
 }

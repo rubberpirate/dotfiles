@@ -27,15 +27,15 @@ Flickable {
         NumberAnimation { target: highlightAnim.target; property: "opacity"; from: 0.3; to: 1; duration: 400 }
     }
 
-    property string currentView: "main" // "main", "update", "dependency", or "credits"
+    readonly property string currentView: GlobalStates.settingsAboutView
 
     onCurrentViewChanged: {
         root.contentY = 0
     }
 
     onVisibleChanged: {
-        if (!visible) root.currentView = "main"
-        if (visible && root.currentView === "main" && !dependencyPage.isScanning) {
+        if (!visible) GlobalStates.settingsAboutView = "main"
+        if (visible && GlobalStates.settingsAboutView === "main" && !dependencyPage.isScanning) {
              dependencyPage.scanDependencies();
         }
     }
@@ -50,7 +50,7 @@ Flickable {
         watchChanges: true
         JsonAdapter {
             id: versionData
-            property string version: "1.3.0"
+            property string version: "1.4.0"
         }
     }
 
@@ -74,7 +74,7 @@ Flickable {
                     implicitHeight: 40 * Appearance.effectiveScale
                     buttonRadius: 20 * Appearance.effectiveScale
                     colBackground: Appearance.colors.colLayer1
-                    onClicked: root.currentView = "main"
+                    onClicked: GlobalStates.settingsAboutView = "main"
                     contentItem: MaterialSymbol {
                         anchors.centerIn: parent
                         text: "arrow_back"
@@ -85,10 +85,10 @@ Flickable {
 
                 StyledText {
                     text: {
-                        if (root.currentView === "main") return "About"
-                        if (root.currentView === "update") return "Shell Update"
-                        if (root.currentView === "dependency") return "Dependency Check"
-                        if (root.currentView === "credits") return "Special Thanks"
+                        if (GlobalStates.settingsAboutView === "main") return "About"
+                        if (GlobalStates.settingsAboutView === "update") return "Shell Update"
+                        if (GlobalStates.settingsAboutView === "dependency") return "Dependency Check"
+                        if (GlobalStates.settingsAboutView === "credits") return "Special Thanks"
                         return "About"
                     }
                     font.pixelSize: 24 * Appearance.effectiveScale
@@ -100,10 +100,10 @@ Flickable {
 
             StyledText {
                 text: {
-                    if (root.currentView === "main") return "System information and shell details."
-                    if (root.currentView === "update") return "Manage shell update channels and fetch new versions."
-                    if (root.currentView === "dependency") return "Check and install missing system dependencies."
-                    if (root.currentView === "credits") return "Contributors and projects that made Nandoroid possible."
+                    if (GlobalStates.settingsAboutView === "main") return "System information and shell details."
+                    if (GlobalStates.settingsAboutView === "update") return "Manage shell update channels and fetch new versions."
+                    if (GlobalStates.settingsAboutView === "dependency") return "Check and install missing system dependencies."
+                    if (GlobalStates.settingsAboutView === "credits") return "Contributors and projects that made Nandoroid possible."
                     return ""
                 }
                 font.pixelSize: Appearance.font.pixelSize.normal
@@ -113,28 +113,28 @@ Flickable {
 
         // ── Main View ──
         AboutMainView {
-            visible: root.currentView === "main"
+            visible: GlobalStates.settingsAboutView === "main"
             Layout.fillWidth: true
             version: versionData.version
-            onPushView: (view) => root.currentView = view
+            onPushView: (view) => GlobalStates.settingsAboutView = view
         }
 
         // ── Update Sub-page ──
         AboutUpdate {
-            visible: root.currentView === "update"
+            visible: GlobalStates.settingsAboutView === "update"
             Layout.fillWidth: true
         }
 
         // ── Dependency Sub-page ──
         AboutDependency {
             id: dependencyPage
-            visible: root.currentView === "dependency"
+            visible: GlobalStates.settingsAboutView === "dependency"
             Layout.fillWidth: true
         }
 
         // ── Credits Sub-page ──
         AboutCredits {
-            visible: root.currentView === "credits"
+            visible: GlobalStates.settingsAboutView === "credits"
             Layout.fillWidth: true
         }
 

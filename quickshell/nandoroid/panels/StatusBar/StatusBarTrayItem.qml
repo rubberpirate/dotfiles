@@ -16,6 +16,7 @@ MouseArea {
     required property SystemTrayItem item
     
     signal menuOpened(var menu)
+    signal menuClosed()
 
     hoverEnabled: true
     acceptedButtons: Qt.LeftButton | Qt.RightButton
@@ -29,7 +30,13 @@ MouseArea {
         if (event.button === Qt.LeftButton) {
             item.activate();
         } else if (event.button === Qt.RightButton) {
-            if (item.hasMenu) menuLoader.active = true;
+            if (item.hasMenu) {
+                if (GlobalStates.activeTrayItem === root.item) {
+                    GlobalStates.activeTrayItem = null;
+                } else {
+                    GlobalStates.activeTrayItem = root.item;
+                }
+            }
         }
         event.accepted = true;
     }
@@ -65,7 +72,7 @@ MouseArea {
 
     Loader {
         id: menuLoader
-        active: false
+        active: GlobalStates.activeTrayItem === root.item
         onLoaded: {
             root.menuOpened(item);
         }
@@ -82,7 +89,12 @@ MouseArea {
                 gravity: Edges.Bottom
             }
 
-            onMenuClosed: menuLoader.active = false
+            onMenuClosed: {
+                if (GlobalStates.activeTrayItem === root.item) {
+                    GlobalStates.activeTrayItem = null;
+                }
+                root.menuClosed();
+            }
         }
     }
 }

@@ -47,47 +47,30 @@ ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 4 * Appearance.effectiveScale
     
+                    // ── Show Weather ──────────────
                     SegmentedWrapper {
                         Layout.fillWidth: true
-                        implicitHeight: showCavaRow.implicitHeight + (32 * Appearance.effectiveScale)
+                        implicitHeight: showWeatherRow.implicitHeight + (32 * Appearance.effectiveScale)
                         orientation: Qt.Vertical
                         maxRadius: 20 * Appearance.effectiveScale
                         color: Appearance.m3colors.m3surfaceContainerHigh
                         RowLayout {
-                            id: showCavaRow
+                            id: showWeatherRow
                             anchors.fill: parent; anchors.margins: 16 * Appearance.effectiveScale
                             spacing: 16 * Appearance.effectiveScale
-                            MaterialSymbol { text: "equalizer"; iconSize: 24 * Appearance.effectiveScale; color: Appearance.colors.colPrimary }
-                            StyledText { text: "Show Cava Visualizer"; Layout.fillWidth: true; color: Appearance.colors.colOnLayer1 }
+                            MaterialSymbol { text: "cloud"; iconSize: 24 * Appearance.effectiveScale; color: Appearance.colors.colPrimary }
+                            StyledText { text: "Show Weather Text"; Layout.fillWidth: true; color: Appearance.colors.colOnLayer1 }
                             AndroidToggle {
-                                checked: Config.ready && Config.options.lock.showCava
-                                onToggled: if(Config.ready) Config.options.lock.showCava = !Config.options.lock.showCava
-                            }
-                        }
-                    }
-    
-                    SegmentedWrapper {
-                        Layout.fillWidth: true
-                        implicitHeight: showMediaRow.implicitHeight + (32 * Appearance.effectiveScale)
-                        orientation: Qt.Vertical
-                        maxRadius: 20 * Appearance.effectiveScale
-                        color: Appearance.m3colors.m3surfaceContainerHigh
-                        RowLayout {
-                            id: showMediaRow
-                            anchors.fill: parent; anchors.margins: 16 * Appearance.effectiveScale
-                            spacing: 16 * Appearance.effectiveScale
-                            MaterialSymbol { text: "movie"; iconSize: 24 * Appearance.effectiveScale; color: Appearance.colors.colPrimary }
-                            StyledText { text: "Show Media Controls"; Layout.fillWidth: true; color: Appearance.colors.colOnLayer1 }
-                            AndroidToggle {
-                                checked: Config.ready && Config.options.lock.showMediaCard
-                                onToggled: if(Config.ready) Config.options.lock.showMediaCard = !Config.options.lock.showMediaCard
+                                checked: Config.ready && Config.options.lock.showWeather
+                                onToggled: if(Config.ready) Config.options.lock.showWeather = !Config.options.lock.showWeather
                             }
                         }
                     }
 
-                    // ── Weather text color mode ────────────
+                    // ── Weather text color mode (Adaptive) ────────────
                     SegmentedWrapper {
                         Layout.fillWidth: true
+                        visible: Config.ready && (Config.options.lock?.showWeather ?? true)
                         implicitHeight: weatherTextRow.implicitHeight + (36 * Appearance.effectiveScale)
                         orientation: Qt.Vertical
                         maxRadius: 20 * Appearance.effectiveScale
@@ -120,6 +103,26 @@ ColumnLayout {
                                             Config.options.lock.weather.textColorMode = modelData.id
                                     }
                                 }
+                            }
+                        }
+                    }
+
+                    // ── Show Media Controls ──────────────
+                    SegmentedWrapper {
+                        Layout.fillWidth: true
+                        implicitHeight: showMediaRow.implicitHeight + (32 * Appearance.effectiveScale)
+                        orientation: Qt.Vertical
+                        maxRadius: 20 * Appearance.effectiveScale
+                        color: Appearance.m3colors.m3surfaceContainerHigh
+                        RowLayout {
+                            id: showMediaRow
+                            anchors.fill: parent; anchors.margins: 16 * Appearance.effectiveScale
+                            spacing: 16 * Appearance.effectiveScale
+                            MaterialSymbol { text: "movie"; iconSize: 24 * Appearance.effectiveScale; color: Appearance.colors.colPrimary }
+                            StyledText { text: "Show Media Controls"; Layout.fillWidth: true; color: Appearance.colors.colOnLayer1 }
+                            AndroidToggle {
+                                checked: Config.ready && Config.options.lock.showMediaCard
+                                onToggled: if(Config.ready) Config.options.lock.showMediaCard = !Config.options.lock.showMediaCard
                             }
                         }
                     }

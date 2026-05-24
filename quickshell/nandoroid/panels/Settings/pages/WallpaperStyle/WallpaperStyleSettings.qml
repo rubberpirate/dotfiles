@@ -73,6 +73,9 @@ Flickable {
 
     property var matugenPreviews: ({})
     property var pendingPreviews: ({})
+    property string desktopSourceHex: ""
+    property string lockscreenSourceHex: ""
+    readonly property string currentSourceHex: previewMatugen.currentSource === "lockscreen" ? lockscreenSourceHex : desktopSourceHex
 
     Timer {
         id: batchUpdateTimer
@@ -102,14 +105,18 @@ Flickable {
 
     Process {
         id: previewMatugen
-        command: ["bash", "-c", `matugen -c ~/.config/matugen/config.toml -t "$1" -m "$2" image "$3" --dry-run -j hex --old-json-output --source-color-index 0`, "matugen", currentScheme, (Config.options.appearance.background.darkmode ? "dark" : "light"), currentPath]
+        command: root.currentSourceHex === "" 
+            ? ["bash", "-c", `[ -f "$3" ] && matugen -c ~/.config/matugen/config.toml -t "$1" -m "$2" image "$3" --dry-run -j hex --old-json-output --source-color-index 0`, "matugen", currentScheme, (Config.options.appearance.background.darkmode ? "dark" : "light"), currentPath]
+            : ["bash", "-c", `matugen -c ~/.config/matugen/config.toml -t "$1" -m "$2" color hex "$3" --dry-run -j hex --old-json-output`, "matugen", currentScheme, (Config.options.appearance.background.darkmode ? "dark" : "light"), root.currentSourceHex]
         property string currentScheme: ""
         property string currentPath: ""
         property string currentSource: ""
         
         stderr: StdioCollector {
             onStreamFinished: {
-                if (this.text.includes("Error:") || this.text.includes("Invalid")) {
+                // Only notify on actual fatal errors to avoid spam during transitions
+                // We check if the text is long enough to be a real error message
+                if (this.text.length > 50 && (this.text.includes("Failed to generate base16 color schemes") || this.text.includes("Invalid PNG signature"))) {
                     root.sendNotification("Preview Error", "Failed to generate preview for this wallpaper.");
                 }
             }
@@ -127,6 +134,19 @@ Flickable {
                     }
                     
                     const data = JSON.parse(rawText.substring(jsonStart, jsonEnd + 1));
+                    
+                    if (root.currentSourceHex === "" && data.colors && data.colors.source_color) {
+                        const sc = data.colors.source_color;
+                        let extracted = sc.default || (sc.light ? sc.light : (sc.dark ? sc.dark : ""));
+                        if (typeof extracted === 'object') extracted = extracted.color || "";
+                        if (typeof extracted === 'string' && extracted.startsWith("#")) {
+                            if (previewMatugen.currentSource === "lockscreen") {
+                                root.lockscreenSourceHex = extracted;
+                            } else {
+                                root.desktopSourceHex = extracted;
+                            }
+                        }
+                    }
                     
                     const mode = Config.options.appearance.background.darkmode ? "dark" : "light";
                     let colors = [];
@@ -163,7 +183,7 @@ Flickable {
         interval: 50
         repeat: false
         onTriggered: {
-            if (!Config.ready || !Config.options.lock || !Config.options.appearance) {
+            if (!Config.ready || !Config.options.lock || !Config.options.appearance || WallpaperEngineService.isApplying) {
                 previewIterateTimer.start();
                 return;
             }
@@ -178,9 +198,13 @@ Flickable {
             }
             
             const scheme = matugenSchemes[previewIndex].id;
-            const path = (previewSource === "lockscreen" && Config.options.lock) 
+            let path = (previewSource === "lockscreen" && Config.options.lock) 
                 ? Config.options.lock.wallpaperPath 
                 : (Config.options.appearance && Config.options.appearance.background ? Config.options.appearance.background.wallpaperPath : "");
+            
+            if (previewSource === "desktop" && WallpaperEngineService.active) {
+                path = WallpaperEngineService.screenshotPath;
+            }
             
             if (!path) {
                 previewIndex++;
@@ -205,10 +229,12 @@ Flickable {
     }
 
     function refreshPreviews() {
-        if (!Config.ready || previewIterateTimer.running || previewMatugen.running) return;
+        if (!Config.ready || previewIterateTimer.running || previewMatugen.running || WallpaperEngineService.isApplying) return;
         previewIndex = 0;
         previewSource = "desktop";
         root.pendingPreviews = {};
+        root.desktopSourceHex = "";
+        root.lockscreenSourceHex = "";
         previewIterateTimer.restart();
     }
 
@@ -229,6 +255,11 @@ Flickable {
         target: Config.ready ? Config.options.lock : null
         function onWallpaperPathChanged() { refreshPreviews() }
         function onUseSeparateWallpaperChanged() { refreshPreviews() }
+    }
+
+    Connections {
+        target: WallpaperEngineService
+        function onScreenshotVersionChanged() { refreshPreviews() }
     }
 
 
@@ -307,7 +338,12 @@ Flickable {
                                 const current = Config.options.lock.useSeparateWallpaper
                                 Config.options.lock.useSeparateWallpaper = !current
                                 if (current) { // Was true (separate), now false (synced)
-                                    Wallpapers.selectForLockscreen(Config.options.appearance.background.wallpaperPath)
+                                    // If Live Wallpaper is active, sync with the sharp screenshot instead of thumbnail
+                                    let targetPath = Config.options.appearance.background.wallpaperPath;
+                                    if (WallpaperEngineService.active) {
+                                        targetPath = "file://" + WallpaperEngineService.screenshotPath;
+                                    }
+                                    Wallpapers.selectForLockscreen(targetPath)
                                 }
                             }
                         }
@@ -333,7 +369,10 @@ Flickable {
                     Layout.fillWidth: true
                     Layout.preferredWidth: 1
                     title: "Desktop wallpaper"
-                    source: (Config.ready && Config.options.appearance && Config.options.appearance.background) ? Config.options.appearance.background.wallpaperPath : ""
+                    source: {
+                        if (WallpaperEngineService.active) return "file://" + WallpaperEngineService.screenshotPath + "?v=" + WallpaperEngineService.screenshotVersion;
+                        return (Config.ready && Config.options.appearance && Config.options.appearance.background) ? Config.options.appearance.background.wallpaperPath : "";
+                    }
                     showCheckmark: false
                     clickable: true
                     onClicked: {
@@ -346,11 +385,14 @@ Flickable {
                     Layout.fillWidth: true
                     Layout.preferredWidth: 1
                     title: "Lock screen wallpaper"
-                    source: (Config.ready && Config.options.lock)
-                        ? (Config.options.lock.useSeparateWallpaper
-                            ? Config.options.lock.wallpaperPath
-                            : (Config.options.appearance && Config.options.appearance.background ? Config.options.appearance.background.wallpaperPath : ""))
-                        : ""
+                    source: {
+                        if (!Config.ready || !Config.options.lock) return "";
+                        if (!Config.options.lock.useSeparateWallpaper) {
+                            if (WallpaperEngineService.active) return "file://" + WallpaperEngineService.screenshotPath + "?v=" + WallpaperEngineService.screenshotVersion;
+                            return (Config.options.appearance && Config.options.appearance.background ? Config.options.appearance.background.wallpaperPath : "");
+                        }
+                        return Config.options.lock.wallpaperPath;
+                    }
                      showCheckmark: Config.ready && (Config.options.lock ? !Config.options.lock.useSeparateWallpaper : false)
                      clickable: Config.ready && (Config.options.lock ? Config.options.lock.useSeparateWallpaper : true)
                      onClicked: {
@@ -375,6 +417,9 @@ Flickable {
         // ── Clock Style Section ──
         WsClock { Layout.fillWidth: true }
 
+        // ── Visualizer Section ──
+        WsCava { Layout.fillWidth: true }
+
         // ── Lockscreen Section ──
         WsLockscreen { Layout.fillWidth: true }
 
@@ -386,9 +431,6 @@ Flickable {
 
         // ── Typography Section ──
         WsTypography { Layout.fillWidth: true }
-
-        // ── Date & Time Section ──
-        WsDateTime { Layout.fillWidth: true }
 
         Item { Layout.fillHeight: true; Layout.preferredHeight: 32 * Appearance.effectiveScale }
     }

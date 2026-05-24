@@ -83,6 +83,7 @@ Rectangle {
                     { name: "Audio", icon: "volume_up" },
                     { name: "Display", icon: "monitor" },
                     { name: "Wallpaper & Style", icon: "palette" },
+                    { name: "System", icon: "settings_applications" },
                     { name: "Services", icon: "cloud" },
                     { name: "About", icon: "info" }
                 ]

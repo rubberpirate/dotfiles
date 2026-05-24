@@ -20,6 +20,8 @@ PopupWindow {
         if (!visible) menuClosed();
     }
 
+    Component.onDestruction: menuClosed()
+
     Rectangle {
         id: popupBackground
         anchors.fill: parent

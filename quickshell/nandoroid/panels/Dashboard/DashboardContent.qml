@@ -231,6 +231,7 @@ Item {
                 MouseArea {
                     anchors.fill: parent
                     hoverEnabled: true
+                    onClicked: GlobalStates.closePopups()
                 }
 
                 Row {
@@ -253,6 +254,7 @@ Item {
                 MouseArea {
                     anchors.fill: parent
                     onWheel: (wheel) => {
+                        GlobalStates.closePopups()
                         if (wheel.angleDelta.y > 0) {
                             root.currentTab = (root.currentTab - 1 + root.tabCount) % root.tabCount
                         } else if (wheel.angleDelta.y < 0) {
@@ -371,6 +373,7 @@ Item {
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: {
+                                    GlobalStates.closePopups()
                                     root.currentTab = index
                                 }
                             }

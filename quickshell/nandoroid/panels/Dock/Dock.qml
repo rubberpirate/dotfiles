@@ -47,7 +47,7 @@ Scope {
                 
                 // Define the clickable area to allow click-through on the sides
                 mask: Region {
-                    // Include the entire mouse area to allow trigger at bottom edge
+                    // Back to a single item mask, but the item's height will be smart
                     item: dockMouseArea
                 }
                 
@@ -122,14 +122,18 @@ Scope {
 
                 MouseArea {
                     id: dockMouseArea
-                    // Standard interactive area
+                    // Width is now always tied to the visual dock width (considering scale)
                     width: Math.max(200 * Appearance.effectiveScale, visualContainer.width * (dockWindow.dockScale / Appearance.effectiveScale))
                     anchors.horizontalCenter: parent.horizontalCenter
                     hoverEnabled: true
                     height: {
-                        if (!Config.ready) return parent.height;
+                        if (!Config.ready) return visualContainer.height;
+                        // If preview is out, we NEED the full height to interact with it
                         if (dockPreview.visible || dockPreview.hovered) return parent.height;
-                        return dockWindow.reveal ? parent.height : 3 * Appearance.effectiveScale;
+                        
+                        // Otherwise, only be as high as the dock or the trigger zone
+                        if (dockWindow.reveal) return visualContainer.height * (dockWindow.dockScale / Appearance.effectiveScale) + (10 * Appearance.effectiveScale);
+                        return 10 * Appearance.effectiveScale; // Trigger zone at bottom
                     }
                     anchors.bottom: parent.bottom
 

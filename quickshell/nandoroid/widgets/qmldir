@@ -27,6 +27,7 @@ NotificationGroup NotificationGroup.qml
 NotificationPopupItem NotificationPopupItem.qml
 StyledComboBox StyledComboBox.qml
 ThumbnailImage ThumbnailImage.qml
+CachingImage CachingImage.qml
 DirectoryIcon DirectoryIcon.qml
 M3IconButton M3IconButton.qml
 NetworkSpeedMeter NetworkSpeedMeter.qml
@@ -49,3 +50,5 @@ WaveVisualizer WaveVisualizer.qml
 MediaCard MediaCard.qml
 WeatherCard WeatherCard.qml
 ScreenshotOverlay ScreenshotOverlay.qml
+AccentPicker AccentPicker.qml
+AccentPickerOverlay AccentPickerOverlay.qml

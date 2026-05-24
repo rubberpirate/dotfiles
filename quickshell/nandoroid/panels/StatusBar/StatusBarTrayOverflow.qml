@@ -29,6 +29,18 @@ Variants {
         exclusionMode: ExclusionMode.Ignore
         color: "transparent"
 
+        property var activeMenu: null
+
+        HyprlandFocusGrab {
+            id: focusGrab
+            active: panelWindow.activeMenu !== null
+            windows: [panelWindow.activeMenu]
+            onCleared: {
+                if (panelWindow.activeMenu) panelWindow.activeMenu.visible = false;
+                panelWindow.activeMenu = null;
+            }
+        }
+
         // PanelWindow supports anchors in this project
         anchors {
             top: true
@@ -96,10 +108,22 @@ Variants {
                     id: overflowRepeater
                     model: panelWindow.overflowModel
                     delegate: StatusBarTrayItem {
+                        id: trayItem
                         required property SystemTrayItem modelData
                         item: modelData
                         implicitWidth: 24 * Appearance.effectiveScale
                         implicitHeight: 24 * Appearance.effectiveScale
+                        
+                        property var currentMenu: null
+
+                        onMenuOpened: (menu) => {
+                            panelWindow.activeMenu = menu;
+                            trayItem.currentMenu = menu;
+                        }
+                        onMenuClosed: () => {
+                            if (panelWindow.activeMenu === trayItem.currentMenu) panelWindow.activeMenu = null;
+                            trayItem.currentMenu = null;
+                        }
                     }
                 }
             }

@@ -50,17 +50,19 @@ Flickable {
             }
         }
 
-        // ── Screenshot Section ──
-        ServicesScreenshot { Layout.fillWidth: true }
-
         // ── Weather Section ──
-        ServicesWeather { Layout.fillWidth: true }        ServicesSearch { Layout.fillWidth: true }
+        ServicesWeather { Layout.fillWidth: true }
+
+        // ── Search Section ──
+        ServicesSearch { Layout.fillWidth: true }
+
+        // ── Network Section ──
         ServicesNetwork { Layout.fillWidth: true }
-        ServicesDisk { Layout.fillWidth: true }
-        ServicesPerformance { Layout.fillWidth: true }
+
+        // ── Media Section ──
         ServicesMedia { Layout.fillWidth: true }
-        ServicesPower { Layout.fillWidth: true }
-        ServicesSystem { Layout.fillWidth: true }
+
+        // ── GitHub Section ──
         ServicesGitHub { Layout.fillWidth: true }
     }
 }

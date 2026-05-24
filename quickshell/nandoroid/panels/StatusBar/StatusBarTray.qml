@@ -48,9 +48,20 @@ RowLayout {
     Repeater {
         model: mainModel
         delegate: StatusBarTrayItem {
+            id: trayItem
             required property SystemTrayItem modelData
             item: modelData
-            onMenuOpened: (menu) => root.activeMenu = menu
+            
+            property var currentMenu: null
+
+            onMenuOpened: (menu) => {
+                root.activeMenu = menu;
+                trayItem.currentMenu = menu;
+            }
+            onMenuClosed: () => {
+                if (root.activeMenu === trayItem.currentMenu) root.activeMenu = null;
+                trayItem.currentMenu = null;
+            }
         }
     }
 
@@ -77,6 +88,7 @@ RowLayout {
             anchors.centerIn: parent
             text: GlobalStates.trayOverflowOpen ? "expand_less" : "expand_more"
             iconSize: 20 * Appearance.effectiveScale
+            color: Appearance.colors.colStatusBarText
         }
 
         onClicked: {
