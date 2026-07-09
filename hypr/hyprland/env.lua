@@ -1,9 +1,7 @@
 local home_dir = os.getenv("HOME")
 
--- Force Hyprland to use Intel iGPU
+-- Force Hyprland to use the Intel iGPU
 hl.env("AQ_DRM_DEVICES", "/dev/dri/card2")
--- hl.env("WLR_DRM_DEVICES", "/dev/dri/by-path/pci-0000:00:02.0-card")
-
 -- Wayland
 hl.env("ELECTRON_OZONE_PLATFORM_HINT", "auto")
 
